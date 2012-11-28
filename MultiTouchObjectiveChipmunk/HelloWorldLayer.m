@@ -7,125 +7,103 @@
 //
 
 
-// Import the interfaces
+#import "ObjectiveChipmunk.h"
 #import "HelloWorldLayer.h"
-
-// Needed to obtain the Navigation Controller
-#import "AppDelegate.h"
 
 #pragma mark - HelloWorldLayer
 
-// HelloWorldLayer implementation
-@implementation HelloWorldLayer
+@implementation HelloWorldLayer {
+	ChipmunkSpace *_space;
+	ChipmunkMultiGrab *_multiGrab;
+}
 
-// Helper class method that creates a Scene with the HelloWorldLayer as the only child.
 +(CCScene *) scene
 {
-	// 'scene' is an autorelease object.
 	CCScene *scene = [CCScene node];
-	
-	// 'layer' is an autorelease object.
-	HelloWorldLayer *layer = [HelloWorldLayer node];
-	
-	// add layer as a child to scene
-	[scene addChild: layer];
-	
-	// return the scene
+	[scene addChild:[HelloWorldLayer node]];
 	return scene;
 }
 
-// on "init" you need to initialize your instance
 -(id) init
 {
-	// always call "super" init
-	// Apple recommends to re-assign "self" with the "super's" return value
-	if( (self=[super init]) ) {
+	if((self = [super init])){
+		self.touchEnabled = YES;
 		
-		// create and initialize a Label
-		CCLabelTTF *label = [CCLabelTTF labelWithString:@"Hello World" fontName:@"Marker Felt" fontSize:64];
-
-		// ask director for the window size
-		CGSize size = [[CCDirector sharedDirector] winSize];
-	
-		// position the label on the center of the screen
-		label.position =  ccp( size.width /2 , size.height/2 );
+		_space = [[ChipmunkSpace alloc] init];
+		_space.gravity = cpv(0, -200);
 		
-		// add the label as a child to this Layer
-		[self addChild: label];
+		CGRect rect = CGRectMake(0, 0, 480, 320);
+		[_space addBounds:rect thickness:5 elasticity:1 friction:1 layers:CP_ALL_LAYERS group:CP_NO_GROUP collisionType:nil];
 		
+		_multiGrab = [[ChipmunkMultiGrab alloc] initForSpace:_space withSmoothing:cpfpow(0.8, 60.0) withGrabForce:20000];
 		
+		// How close a touch has to be to an object to grab it. (should be about the size of the user's finger on the screen)
+		_multiGrab.grabRadius = 20.0;
 		
-		//
-		// Leaderboards and Achievements
-		//
+		// Torque to apply to grabs to slow down spinning.
+		_multiGrab.grabRotaryFriction = 1e2;
 		
-		// Default font size will be 28 points.
-		[CCMenuItemFont setFontSize:28];
+		// Enable push mode. When an object isn't grabbed, it inserts a circle that tracks the touch instead.
+		// This allows you to push things around.
+		_multiGrab.pushMode = TRUE;
 		
-		// Achievement Menu Item using blocks
-		CCMenuItem *itemAchievement = [CCMenuItemFont itemWithString:@"Achievements" block:^(id sender) {
+		// The friction on the push shape.
+		_multiGrab.pushFriction = 0.7f;
+		
+		// The mass of the finger body. Should be about the same as the objects you intend to push, maybe a little less.
+		_multiGrab.pushMass = 1.0;
+		
+		CCPhysicsDebugNode *debugNode = [CCPhysicsDebugNode debugNodeForChipmunkSpace:_space];
+		[self addChild:debugNode];
+		
+		{ // Add a box
+			cpFloat mass = 5;
+			cpFloat width = 200;
+			cpFloat height = 60;
 			
+			ChipmunkBody *body = [_space add:[ChipmunkBody bodyWithMass:mass andMoment:cpMomentForBox(mass, width, height)]];
+			body.pos = cpv(100, 160);
 			
-			GKAchievementViewController *achievementViewController = [[GKAchievementViewController alloc] init];
-			achievementViewController.achievementDelegate = self;
-			
-			AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-			
-			[[app navController] presentModalViewController:achievementViewController animated:YES];
-			
-			[achievementViewController release];
+			ChipmunkShape *shape = [_space add:[ChipmunkPolyShape boxWithBody:body width:width height:height]];
+			shape.friction = 0.7;
 		}
-									   ];
-
-		// Leaderboard Menu Item using blocks
-		CCMenuItem *itemLeaderboard = [CCMenuItemFont itemWithString:@"Leaderboard" block:^(id sender) {
+		
+		{ // Add a circle
+			cpFloat mass = 1;
+			cpFloat radius = 50;
 			
+			ChipmunkBody *body = [_space add:[ChipmunkBody bodyWithMass:mass andMoment:cpMomentForCircle(mass, 0, radius, cpvzero)]];
+			body.pos = cpv(400, 160);
 			
-			GKLeaderboardViewController *leaderboardViewController = [[GKLeaderboardViewController alloc] init];
-			leaderboardViewController.leaderboardDelegate = self;
-			
-			AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-			
-			[[app navController] presentModalViewController:leaderboardViewController animated:YES];
-			
-			[leaderboardViewController release];
+			ChipmunkShape *shape = [_space add:[ChipmunkCircleShape circleWithBody:body radius:radius offset:cpvzero]];
+			shape.friction = 0.7;
 		}
-									   ];
 		
-		CCMenu *menu = [CCMenu menuWithItems:itemAchievement, itemLeaderboard, nil];
-		
-		[menu alignItemsHorizontallyWithPadding:20];
-		[menu setPosition:ccp( size.width/2, size.height/2 - 50)];
-		
-		// Add the menu to the layer
-		[self addChild:menu];
-
+		[self scheduleUpdate];
 	}
+	
 	return self;
 }
 
-// on "dealloc" you need to release all your retained objects
-- (void) dealloc
+-(void)update:(cpFloat)dt
 {
-	// in case you have something to dealloc, do it in this method
-	// in this particular example nothing needs to be released.
-	// cocos2d will automatically release all the children (Label)
-	
-	// don't forget to call "super dealloc"
-	[super dealloc];
+	[_space step:1.0/60.0];
 }
 
-#pragma mark GameKit delegate
-
--(void) achievementViewControllerDidFinish:(GKAchievementViewController *)viewController
+- (void)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event;
 {
-	AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-	[[app navController] dismissModalViewControllerAnimated:YES];
+	for(UITouch *touch in touches) [_multiGrab beginLocation:[self convertTouchToNodeSpace:touch]];
 }
 
--(void) leaderboardViewControllerDidFinish:(GKLeaderboardViewController *)viewController
+- (void)ccTouchesMoved:(NSSet *)touches withEvent:(UIEvent *)event;
 {
-	AppController *app = (AppController*) [[UIApplication sharedApplication] delegate];
-	[[app navController] dismissModalViewControllerAnimated:YES];
+	for(UITouch *touch in touches) [_multiGrab updateLocation:[self convertTouchToNodeSpace:touch]];
 }
+
+- (void)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event;
+{
+	for(UITouch *touch in touches) [_multiGrab endLocation:[self convertTouchToNodeSpace:touch]];
+}
+
+
 @end
