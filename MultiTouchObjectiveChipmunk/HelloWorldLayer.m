@@ -32,7 +32,8 @@
 		_space = [[ChipmunkSpace alloc] init];
 		_space.gravity = cpv(0, -200);
 		
-		CGRect rect = CGRectMake(0, 0, 480, 320);
+		CGSize size = [CCDirector sharedDirector].winSize;
+		CGRect rect = CGRectMake(0, 0, size.width, size.height);
 		[_space addBounds:rect thickness:5 elasticity:1 friction:1 layers:CP_ALL_LAYERS group:CP_NO_GROUP collisionType:nil];
 		
 		_multiGrab = [[ChipmunkMultiGrab alloc] initForSpace:_space withSmoothing:cpfpow(0.8, 60.0) withGrabForce:20000];

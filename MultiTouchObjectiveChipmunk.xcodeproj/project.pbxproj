@@ -502,7 +502,6 @@
 		D37499721665B30700AF7D26 = {
 			isa = PBXGroup;
 			children = (
-				D3749BCC1665B5DC00AF7D26 /* ImageIO.framework */,
 				D37499931665B30700AF7D26 /* MultiTouchObjectiveChipmunk */,
 				D37499801665B30700AF7D26 /* Frameworks */,
 				D374997E1665B30700AF7D26 /* Products */,
@@ -521,6 +520,7 @@
 		D37499801665B30700AF7D26 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D3749BCC1665B5DC00AF7D26 /* ImageIO.framework */,
 				D37499811665B30700AF7D26 /* QuartzCore.framework */,
 				D37499831665B30700AF7D26 /* OpenGLES.framework */,
 				D37499851665B30700AF7D26 /* OpenAL.framework */,
@@ -1336,6 +1336,7 @@
 				D3749B2A1665B30A00AF7D26 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D3749B381665B32400AF7D26 /* Build configuration list for PBXNativeTarget "Cocos2D" */ = {
 			isa = XCConfigurationList;
@@ -1344,6 +1345,7 @@
 				D3749B3A1665B32400AF7D26 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
